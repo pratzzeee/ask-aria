@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import streamlit as st
 from langchain_groq import ChatGroq
-from langchain.memory import ConversationBufferMemory
+from langchain_community.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
 
 load_dotenv()
@@ -25,7 +25,7 @@ with st.sidebar:
     index=0
    )
     temperature = st.slider(
-        "Temperature",
+        "Temperature", #this is the creativity of the model, higher = more creative, lower = more focused. try to change and see how the responses change!
         min_value=0.0,
         max_value=1.0,
         value=0.7,
