@@ -1,29 +1,53 @@
 import os
+import time
+import requests
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
 # ── Constants ──────────────────────────────────────────────
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+HF_API_TOKEN     = os.getenv("HF_API_TOKEN")
 INDEX_NAME       = "pdf-rag-index"
-EMBEDDING_MODEL  = "all-MiniLM-L6-v2"
 CHUNK_SIZE       = 500
 CHUNK_OVERLAP    = 50
 
-# ── Singleton: embedding model ─────────────────────────────
-_embedder = None
+# HuggingFace Inference API — free, no torch needed
+HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+HF_HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"}
 
-def get_embedder():
-    """Load the embedding model once and reuse it."""
-    global _embedder
-    if _embedder is None:
-        _embedder = SentenceTransformer(EMBEDDING_MODEL)
-    return _embedder
+# ── Embedding via HF API ───────────────────────────────────
 
-# ── Singleton: Pinecone index ──────────────────────────────
+def get_embeddings(texts: list[str]) -> list[list[float]]:
+    """
+    Call HuggingFace Inference API to embed a list of texts.
+    Returns a list of 384-dim float vectors.
+    """
+    # HF API can be cold — retry up to 3 times
+    for attempt in range(3):
+        response = requests.post(
+            HF_API_URL,
+            headers=HF_HEADERS,
+            json={"inputs": texts, "options": {"wait_for_model": True}}
+        )
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 503:
+            # Model is loading — wait and retry
+            time.sleep(10)
+        else:
+            raise Exception(f"HF API error {response.status_code}: {response.text}")
+
+    raise Exception("HF API failed after 3 attempts — model may be unavailable")
+
+def get_embedding(text: str) -> list[float]:
+    """Embed a single string."""
+    return get_embeddings([text])[0]
+
+# ── Pinecone ───────────────────────────────────────────────
+
 def get_pinecone_index():
     """Connect to Pinecone, create index if it doesn't exist."""
     pc = Pinecone(api_key=PINECONE_API_KEY)
@@ -31,7 +55,7 @@ def get_pinecone_index():
     if INDEX_NAME not in existing:
         pc.create_index(
             name=INDEX_NAME,
-            dimension=384,        # all-MiniLM-L6-v2 = 384 dims
+            dimension=384,
             metric="cosine",
             spec=ServerlessSpec(cloud="aws", region="us-east-1")
         )
@@ -40,7 +64,7 @@ def get_pinecone_index():
 # ── PDF helpers ────────────────────────────────────────────
 
 def extract_text_from_pdf(file_path: str) -> str:
-    """Extract all text from a PDF using pypdf directly."""
+    """Extract all text from a PDF using pypdf."""
     reader = PdfReader(file_path)
     text = ""
     for page in reader.pages:
@@ -48,10 +72,7 @@ def extract_text_from_pdf(file_path: str) -> str:
     return text
 
 def chunk_text(text: str) -> list[str]:
-    """
-    Split text into overlapping chunks manually.
-    No LangChain needed — pure Python.
-    """
+    """Split text into overlapping chunks."""
     chunks = []
     start = 0
     while start < len(text):
@@ -64,39 +85,36 @@ def chunk_text(text: str) -> list[str]:
 
 def process_pdf(file_path: str) -> int:
     """
-    Full pipeline: extract → chunk → embed → upsert to Pinecone.
+    Full pipeline: extract → chunk → embed via HF API → upsert to Pinecone.
     Returns number of chunks stored.
     """
-    # 1. Extract raw text
-    text = extract_text_from_pdf(file_path)
-
-    # 2. Split into chunks
+    text   = extract_text_from_pdf(file_path)
     chunks = chunk_text(text)
 
-    # 3. Embed all chunks locally
-    embedder = get_embedder()
-    vectors  = embedder.encode(chunks, show_progress_bar=False).tolist()
+    # Embed in batches of 32 (HF API limit)
+    all_vectors = []
+    batch_size  = 32
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i:i+batch_size]
+        vecs  = get_embeddings(batch)
+        all_vectors.extend(vecs)
 
-    # 4. Upsert into Pinecone
+    # Upsert to Pinecone in batches of 100
     index = get_pinecone_index()
     upsert_data = [
-        (f"chunk-{i}", vectors[i], {"text": chunks[i]})
+        (f"chunk-{i}", all_vectors[i], {"text": chunks[i]})
         for i in range(len(chunks))
     ]
-
-    # Pinecone recommends batches of 100
-    batch_size = 100
-    for i in range(0, len(upsert_data), batch_size):
-        index.upsert(vectors=upsert_data[i:i+batch_size])
+    for i in range(0, len(upsert_data), 100):
+        index.upsert(vectors=upsert_data[i:i+100])
 
     return len(chunks)
 
 def query_rag(question: str, top_k: int = 4) -> str:
     """
-    Embed the question → find top_k similar chunks → return as context string.
+    Embed question via HF API → find top_k chunks → return context string.
     """
-    embedder     = get_embedder()
-    question_vec = embedder.encode(question).tolist()
+    question_vec = get_embedding(question)
 
     index   = get_pinecone_index()
     results = index.query(

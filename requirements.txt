@@ -3,6 +3,4 @@ groq
 python-dotenv
 pypdf
 pinecone
-torch==2.1.2
-transformers==4.38.2
-sentence-transformers==2.6.1
+requests
