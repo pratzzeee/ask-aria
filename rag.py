@@ -15,7 +15,7 @@ CHUNK_SIZE       = 500
 CHUNK_OVERLAP    = 50
 
 # HuggingFace Inference API — free, no torch needed
-HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
 HF_HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"}
 
 # ── Embedding via HF API ───────────────────────────────────
