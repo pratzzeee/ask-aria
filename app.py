@@ -58,6 +58,19 @@ with st.sidebar:
                 chunk_count = process_pdf(tmp_path)
                 pdf_ready = True
 
+
+            with st.spinner("Processing PDF..."):
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                        tmp.write(uploaded_file.read())
+                        tmp_path = tmp.name
+
+                    chunk_count = process_pdf(tmp_path)
+                    pdf_ready = True
+                except Exception as e:
+                    st.error(f"PDF processing failed: {str(e)}")
+                    st.stop()
+
             st.success(f"✅ Indexed {chunk_count} chunks!")
 
     if st.button("🗑️ Clear conversation"):
