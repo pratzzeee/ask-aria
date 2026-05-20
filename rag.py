@@ -9,14 +9,19 @@ load_dotenv()
 
 # ── Constants ──────────────────────────────────────────────
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-HF_API_TOKEN     = os.getenv("HF_API_TOKEN")
 INDEX_NAME       = "pdf-rag-index"
 CHUNK_SIZE       = 500
 CHUNK_OVERLAP    = 50
 
 # HuggingFace Inference API — free, no torch needed
 HF_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
-HF_HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+
+def get_hf_headers():
+    """Read token fresh each call — avoids module-load-time None issue."""
+    token = os.getenv("HF_API_TOKEN")
+    if not token:
+        raise Exception("HF_API_TOKEN not found — check your .env file")
+    return {"Authorization": f"Bearer {token}"}
 
 # ── Embedding via HF API ───────────────────────────────────
 
@@ -25,17 +30,15 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
     Call HuggingFace Inference API to embed a list of texts.
     Returns a list of 384-dim float vectors.
     """
-    # HF API can be cold — retry up to 3 times
     for attempt in range(3):
         response = requests.post(
             HF_API_URL,
-            headers=HF_HEADERS,
+            headers=get_hf_headers(),
             json={"inputs": texts, "options": {"wait_for_model": True}}
         )
         if response.status_code == 200:
             return response.json()
         elif response.status_code == 503:
-            # Model is loading — wait and retry
             time.sleep(10)
         else:
             raise Exception(f"HF API error {response.status_code}: {response.text}")

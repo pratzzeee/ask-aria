@@ -50,28 +50,18 @@ with st.sidebar:
 
         if uploaded_file is not None:
             with st.spinner("Processing PDF..."):
-                # Write uploaded bytes to a temp file so PyPDFLoader can read it
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                    tmp.write(uploaded_file.read())
-                    tmp_path = tmp.name
-
-                chunk_count = process_pdf(tmp_path)
-                pdf_ready = True
-
-
-            with st.spinner("Processing PDF..."):
                 try:
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                         tmp.write(uploaded_file.read())
+                        tmp.flush()          # force write to disk
                         tmp_path = tmp.name
 
                     chunk_count = process_pdf(tmp_path)
                     pdf_ready = True
+                    st.success(f"✅ Indexed {chunk_count} chunks!")
                 except Exception as e:
                     st.error(f"PDF processing failed: {str(e)}")
                     st.stop()
-
-            st.success(f"✅ Indexed {chunk_count} chunks!")
 
     if st.button("🗑️ Clear conversation"):
         st.session_state.messages = []
@@ -104,10 +94,7 @@ if prompt := st.chat_input("Ask Aria anything..."):
 
             # ── Build messages list for Groq ───────────────
             if mode == "📄 PDF Chat" and pdf_ready:
-                # Fetch relevant chunks from Pinecone
                 context = query_rag(prompt)
-
-                # Inject PDF context as system message
                 rag_system_msg = {
                     "role": "system",
                     "content": f"{RAG_SYSTEM_PROMPT}\n\nCONTEXT:\n{context}"
@@ -115,14 +102,12 @@ if prompt := st.chat_input("Ask Aria anything..."):
                 messages_to_send = [rag_system_msg] + st.session_state.messages
 
             elif mode == "📄 PDF Chat" and not pdf_ready:
-                # PDF mode selected but no PDF uploaded yet
                 messages_to_send = [
                     {"role": "system", "content": RAG_SYSTEM_PROMPT},
                     *st.session_state.messages
                 ]
 
             else:
-                # Normal chat
                 messages_to_send = [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     *st.session_state.messages
