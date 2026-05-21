@@ -53,7 +53,7 @@ with st.sidebar:
                 try:
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                         tmp.write(uploaded_file.read())
-                        tmp.flush()          # force write to disk
+                        tmp.flush()
                         tmp_path = tmp.name
 
                     chunk_count = process_pdf(tmp_path)
@@ -90,35 +90,41 @@ if prompt := st.chat_input("Ask Aria anything..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Aria is thinking..."):
 
-            # ── Build messages list for Groq ───────────────
-            if mode == "📄 PDF Chat" and pdf_ready:
+        # ── Build messages list for Groq ───────────────
+        if mode == "📄 PDF Chat" and pdf_ready:
+            with st.spinner("Searching PDF..."):
                 context = query_rag(prompt)
-                rag_system_msg = {
-                    "role": "system",
-                    "content": f"{RAG_SYSTEM_PROMPT}\n\nCONTEXT:\n{context}"
-                }
-                messages_to_send = [rag_system_msg] + st.session_state.messages
+            rag_system_msg = {
+                "role": "system",
+                "content": f"{RAG_SYSTEM_PROMPT}\n\nCONTEXT:\n{context}"
+            }
+            messages_to_send = [rag_system_msg] + st.session_state.messages
 
-            elif mode == "📄 PDF Chat" and not pdf_ready:
-                messages_to_send = [
-                    {"role": "system", "content": RAG_SYSTEM_PROMPT},
-                    *st.session_state.messages
-                ]
+        elif mode == "📄 PDF Chat" and not pdf_ready:
+            messages_to_send = [
+                {"role": "system", "content": RAG_SYSTEM_PROMPT},
+                *st.session_state.messages
+            ]
 
-            else:
-                messages_to_send = [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    *st.session_state.messages
-                ]
+        else:
+            messages_to_send = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                *st.session_state.messages
+            ]
 
-            response = client.chat.completions.create(
-                model=model,
-                temperature=temperature,
-                messages=messages_to_send
-            )
-            reply = response.choices[0].message.content
-            st.markdown(reply)
+        # ── Stream the response ────────────────────────
+        stream = client.chat.completions.create(
+            model=model,
+            temperature=temperature,
+            messages=messages_to_send,
+            stream=True
+        )
+
+        reply = st.write_stream(
+            chunk.choices[0].delta.content or ""
+            for chunk in stream
+            if chunk.choices[0].delta.content
+        )
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
