@@ -4,3 +4,4 @@ python-dotenv
 pypdf
 pinecone
 requests
+python-docx
