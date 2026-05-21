@@ -4,6 +4,33 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 
 ---
 
+## [v6.0.0] - 2026-05-21 — Feature 5: RAG Evaluation Dashboard
+
+### Added
+- `eval.py` — 3 evaluation methods:
+  - Latency profiling (embedding, Pinecone, LLM breakdown)
+  - Retrieval quality (keyword hit rate %)
+  - LLM-as-judge (faithfulness, relevance, completeness scored 1-10)
+- `eval_dashboard.py` — standalone Streamlit evaluation UI
+  - Summary metric cards
+  - Interactive latency stacked bar chart
+  - Retrieval hit rate bar chart by category
+  - LLM judge line chart across all questions
+  - Detailed expandable results per question
+- `eval_data/test_qa.json` — 10 golden Q&A pairs across 5 categories:
+  - factual, numerical, technical, out_of_scope, summarisation
+
+### Evaluation Results (on Prathyush Maniyam resume)
+- Avg Latency: 3.68s (embedding is main bottleneck)
+- Retrieval Hit Rate: 55.8%
+- Faithfulness: 8.1/10
+- Relevance: 9.5/10
+
+### Tech Stack Addition
+- `plotly` for interactive charts
+
+---
+
 ## [v5.0.0] - 2026-05-21 — Feature 4: UI Upgrade + Code Refactor
 
 ### Added
@@ -115,5 +142,6 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 | v3.0.0 | Streaming responses | ✅ Complete |
 | v4.0.0 | Multi-document chat (PDF/DOCX/TXT) | ✅ Complete |
 | v5.0.0 | UI upgrade + code refactor | ✅ Complete |
-| v6.0.0 | Performance & caching | 🔲 Planned |
-| v6.1.0 | Usage analytics | 🔲 Planned |
+| v6.0.0 | RAG evaluation dashboard | ✅ Complete |
+| v7.0.0 | Performance & caching improvements | 🔲 Planned |
+| v7.1.0 | Add more LLM models | 🔲 Planned |
