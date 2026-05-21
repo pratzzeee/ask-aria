@@ -4,6 +4,7 @@ import requests
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from pypdf import PdfReader
+import docx
 
 load_dotenv()
 
@@ -13,11 +14,10 @@ INDEX_NAME       = "pdf-rag-index"
 CHUNK_SIZE       = 500
 CHUNK_OVERLAP    = 50
 
-# HuggingFace Inference API — free, no torch needed
+# HuggingFace Inference API
 HF_API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
 
 def get_hf_headers():
-    """Read token fresh each call — avoids module-load-time None issue."""
     token = os.getenv("HF_API_TOKEN")
     if not token:
         raise Exception("HF_API_TOKEN not found — check your .env file")
@@ -26,10 +26,6 @@ def get_hf_headers():
 # ── Embedding via HF API ───────────────────────────────────
 
 def get_embeddings(texts: list[str]) -> list[list[float]]:
-    """
-    Call HuggingFace Inference API to embed a list of texts.
-    Returns a list of 384-dim float vectors.
-    """
     for attempt in range(3):
         response = requests.post(
             HF_API_URL,
@@ -42,17 +38,14 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
             time.sleep(10)
         else:
             raise Exception(f"HF API error {response.status_code}: {response.text}")
-
-    raise Exception("HF API failed after 3 attempts — model may be unavailable")
+    raise Exception("HF API failed after 3 attempts")
 
 def get_embedding(text: str) -> list[float]:
-    """Embed a single string."""
     return get_embeddings([text])[0]
 
 # ── Pinecone ───────────────────────────────────────────────
 
 def get_pinecone_index():
-    """Connect to Pinecone, create index if it doesn't exist."""
     pc = Pinecone(api_key=PINECONE_API_KEY)
     existing = [i.name for i in pc.list_indexes()]
     if INDEX_NAME not in existing:
@@ -64,18 +57,34 @@ def get_pinecone_index():
         )
     return pc.Index(INDEX_NAME)
 
-# ── PDF helpers ────────────────────────────────────────────
+# ── Text extractors ────────────────────────────────────────
 
 def extract_text_from_pdf(file_path: str) -> str:
-    """Extract all text from a PDF using pypdf."""
     reader = PdfReader(file_path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() or ""
-    return text
+    return "".join(page.extract_text() or "" for page in reader.pages)
+
+def extract_text_from_docx(file_path: str) -> str:
+    doc = docx.Document(file_path)
+    return "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+
+def extract_text_from_txt(file_path: str) -> str:
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read()
+
+def extract_text(file_path: str, filename: str) -> str:
+    ext = filename.rsplit(".", 1)[-1].lower()
+    if ext == "pdf":
+        return extract_text_from_pdf(file_path)
+    elif ext == "docx":
+        return extract_text_from_docx(file_path)
+    elif ext == "txt":
+        return extract_text_from_txt(file_path)
+    else:
+        raise ValueError(f"Unsupported file type: .{ext}")
+
+# ── Chunking ───────────────────────────────────────────────
 
 def chunk_text(text: str) -> list[str]:
-    """Split text into overlapping chunks."""
     chunks = []
     start = 0
     while start < len(text):
@@ -86,15 +95,15 @@ def chunk_text(text: str) -> list[str]:
 
 # ── Core functions ─────────────────────────────────────────
 
-def process_pdf(file_path: str) -> int:
+def process_file(file_path: str, filename: str) -> int:
     """
-    Full pipeline: extract → chunk → embed via HF API → upsert to Pinecone.
-    Returns number of chunks stored.
+    Full pipeline for a single file:
+    extract → chunk → embed → upsert to Pinecone.
+    Chunks tagged with source filename.
     """
-    text   = extract_text_from_pdf(file_path)
+    text   = extract_text(file_path, filename)
     chunks = chunk_text(text)
 
-    # Embed in batches of 32 (HF API limit)
     all_vectors = []
     batch_size  = 32
     for i in range(0, len(chunks), batch_size):
@@ -102,20 +111,41 @@ def process_pdf(file_path: str) -> int:
         vecs  = get_embeddings(batch)
         all_vectors.extend(vecs)
 
-    # Upsert to Pinecone in batches of 100
-    index = get_pinecone_index()
+    index     = get_pinecone_index()
+    safe_name = filename.replace(" ", "_").replace(".", "_")
     upsert_data = [
-        (f"chunk-{i}", all_vectors[i], {"text": chunks[i]})
+        (
+            f"{safe_name}-chunk-{i}",
+            all_vectors[i],
+            {
+                "text":   chunks[i],
+                "source": filename
+            }
+        )
         for i in range(len(chunks))
     ]
+
     for i in range(0, len(upsert_data), 100):
         index.upsert(vectors=upsert_data[i:i+100])
 
     return len(chunks)
 
-def query_rag(question: str, top_k: int = 4) -> str:
+def process_files(file_paths: list[tuple[str, str]]) -> dict:
     """
-    Embed question via HF API → find top_k chunks → return context string.
+    Process multiple files at once.
+    file_paths: list of (tmp_path, original_filename) tuples
+    Returns dict of {filename: chunk_count}
+    """
+    results = {}
+    for file_path, filename in file_paths:
+        count = process_file(file_path, filename)
+        results[filename] = count
+    return results
+
+def query_rag(question: str, top_k: int = 6) -> str:
+    """
+    Embed question → find top_k chunks across ALL documents
+    → return context string with source attribution.
     """
     question_vec = get_embedding(question)
 
@@ -126,10 +156,11 @@ def query_rag(question: str, top_k: int = 4) -> str:
         include_metadata=True
     )
 
-    context_chunks = [
-        match.metadata["text"]
-        for match in results.matches
-        if match.metadata.get("text")
-    ]
+    context_parts = []
+    for match in results.matches:
+        if match.metadata.get("text"):
+            source = match.metadata.get("source", "Unknown")
+            text   = match.metadata["text"]
+            context_parts.append(f"[Source: {source}]\n{text}")
 
-    return "\n\n---\n\n".join(context_chunks)
+    return "\n\n---\n\n".join(context_parts)

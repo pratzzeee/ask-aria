@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from groq import Groq
 from dotenv import load_dotenv
-from rag import process_pdf, query_rag
+from rag import process_files, query_rag
 import tempfile
 
 load_dotenv()
@@ -20,7 +20,7 @@ st.title("🤖 Aria — Customer Support Assistant")
 # ── Mode selector ──────────────────────────────────────────
 mode = st.radio(
     "Chat mode",
-    ["💬 Normal Chat", "📄 PDF Chat"],
+    ["💬 Normal Chat", "📄 Document Chat"],
     horizontal=True
 )
 st.caption("Powered by LLaMA 3 via Groq")
@@ -41,26 +41,43 @@ with st.sidebar:
     st.markdown("- Hosting: Streamlit Cloud")
     st.divider()
 
-    # ── PDF Upload (only shown in PDF Chat mode) ───────────
-    pdf_ready = False
+    # ── Document Upload ────────────────────────────────────
+    docs_ready = False
 
-    if mode == "📄 PDF Chat":
-        st.header("📄 Upload a PDF")
-        uploaded_file = st.file_uploader("Choose a PDF file", type=["pdf"])
+    if mode == "📄 Document Chat":
+        st.header("📁 Upload Documents")
+        st.caption("Supports PDF, DOCX, TXT — multiple files allowed")
 
-        if uploaded_file is not None:
-            with st.spinner("Processing PDF..."):
+        uploaded_files = st.file_uploader(
+            "Choose files",
+            type=["pdf", "docx", "txt"],
+            accept_multiple_files=True    # ← key change
+        )
+
+        if uploaded_files:
+            with st.spinner(f"Processing {len(uploaded_files)} file(s)..."):
                 try:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                        tmp.write(uploaded_file.read())
-                        tmp.flush()
-                        tmp_path = tmp.name
+                    # Save all files to temp paths
+                    file_paths = []
+                    for uploaded_file in uploaded_files:
+                        ext = uploaded_file.name.rsplit(".", 1)[-1].lower()
+                        with tempfile.NamedTemporaryFile(
+                            delete=False, suffix=f".{ext}"
+                        ) as tmp:
+                            tmp.write(uploaded_file.read())
+                            tmp.flush()
+                            file_paths.append((tmp.name, uploaded_file.name))
 
-                    chunk_count = process_pdf(tmp_path)
-                    pdf_ready = True
-                    st.success(f"✅ Indexed {chunk_count} chunks!")
+                    # Process all files
+                    results = process_files(file_paths)
+                    docs_ready = True
+
+                    # Show per-file chunk counts
+                    for filename, count in results.items():
+                        st.success(f"✅ {filename}: {count} chunks")
+
                 except Exception as e:
-                    st.error(f"PDF processing failed: {str(e)}")
+                    st.error(f"Processing failed: {str(e)}")
                     st.stop()
 
     if st.button("🗑️ Clear conversation"):
@@ -72,7 +89,9 @@ SYSTEM_PROMPT = """You are Aria, a friendly and helpful customer support assista
 You help customers with their queries clearly and concisely."""
 
 RAG_SYSTEM_PROMPT = """You are Aria, a helpful assistant. Answer the user's question 
-using ONLY the context provided. If the answer isn't in the context, say so honestly."""
+using ONLY the context provided. Each context chunk is labeled with its source document.
+If the answer isn't in the context, say so honestly.
+When relevant, mention which document the information came from."""
 
 # ── Chat history init ──────────────────────────────────────
 if "messages" not in st.session_state:
@@ -91,9 +110,9 @@ if prompt := st.chat_input("Ask Aria anything..."):
 
     with st.chat_message("assistant"):
 
-        # ── Build messages list for Groq ───────────────
-        if mode == "📄 PDF Chat" and pdf_ready:
-            with st.spinner("Searching PDF..."):
+        # ── Build messages list for Groq ───────────────────
+        if mode == "📄 Document Chat" and docs_ready:
+            with st.spinner("Searching documents..."):
                 context = query_rag(prompt)
             rag_system_msg = {
                 "role": "system",
@@ -101,7 +120,7 @@ if prompt := st.chat_input("Ask Aria anything..."):
             }
             messages_to_send = [rag_system_msg] + st.session_state.messages
 
-        elif mode == "📄 PDF Chat" and not pdf_ready:
+        elif mode == "📄 Document Chat" and not docs_ready:
             messages_to_send = [
                 {"role": "system", "content": RAG_SYSTEM_PROMPT},
                 *st.session_state.messages
@@ -113,7 +132,7 @@ if prompt := st.chat_input("Ask Aria anything..."):
                 *st.session_state.messages
             ]
 
-        # ── Stream the response ────────────────────────
+        # ── Stream the response ─────────────────────────────
         stream = client.chat.completions.create(
             model=model,
             temperature=temperature,
