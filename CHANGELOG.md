@@ -4,6 +4,32 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 
 ---
 
+## [v5.0.0] - 2026-05-21 — Feature 4: UI Upgrade + Code Refactor
+
+### Added
+- Apple-inspired UI with clean typography and generous spacing
+- Welcome screen with 4 suggestion cards on empty chat
+- Footer with author name and links
+- Clear documents button with full UI and Pinecone reset
+- `uploader_key` trick to reset Streamlit file uploader UI
+- `.streamlit/config.toml` for consistent base theme
+
+### Changed
+- Refactored monolithic `app.py` into:
+  - `config.py` — models, prompts, constants, author info
+  - `styles.py` — all CSS and HTML string templates
+  - `utils.py` — helper functions (file handling, message building)
+- Bigger fonts across all components (13px → 15–16px)
+- Header changed to "How can I help you?" with larger icon
+- `app.py` reduced to UI-only logic (~90 lines)
+
+### Fixed
+- Pinecone namespace error on `clear_index()` (added `namespace=""`)
+- File uploader not resetting visually after clear documents
+- Old vectors from previous sessions mixing with new uploads
+
+---
+
 ## [v4.0.0] - 2026-05-20 — Feature 3: Multi-Document Chat
 
 ### Added
@@ -87,6 +113,7 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 | v1.0.0 | Core chatbot via Groq | ✅ Complete |
 | v2.1.0 | RAG PDF Chat with Pinecone | ✅ Complete |
 | v3.0.0 | Streaming responses | ✅ Complete |
-| v4.0.0 | Multi-Document Chat (PDF/DOCX/TXT) | ✅ Complete |
-| v5.0.0 | Persistent chat history | 🔲 Planned |
-| v5.1.0 | UI Upgrade | 🔲 Planned |
+| v4.0.0 | Multi-document chat (PDF/DOCX/TXT) | ✅ Complete |
+| v5.0.0 | UI upgrade + code refactor | ✅ Complete |
+| v6.0.0 | Performance & caching | 🔲 Planned |
+| v6.1.0 | Usage analytics | 🔲 Planned |
