@@ -63,7 +63,7 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 
 1. Clone the repository
 ```bash
-git clone https://github.com/pratzzeee/portfolio_chatbot.git
+git clone https://github.com/pratzzeee/ask-aria.git
 cd portfolio_chatbot
 ```
 
