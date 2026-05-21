@@ -2,102 +2,99 @@ import os
 import streamlit as st
 from groq import Groq
 from dotenv import load_dotenv
-from rag import process_files, query_rag
-import tempfile
+from rag import query_rag, clear_index
+from config import (
+    MODELS, DEFAULT_MODEL, DEFAULT_TEMPERATURE,
+    SUPPORTED_TYPES, SYSTEM_PROMPT, RAG_SYSTEM_PROMPT,
+    SUGGESTIONS, AUTHOR_NAME, AUTHOR_GITHUB, AUTHOR_LINKEDIN
+)
+from styles import (
+    APPLE_CSS, LOGO_HTML, HEADER_HTML, LABEL_HTML,
+    TECH_STACK_HTML, footer_html, suggestion_card_html
+)
+from utils import handle_file_upload, build_messages
 
 load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-st.set_page_config(
-    page_title="Aria - Customer Support",
-    page_icon="🤖",
-    layout="centered"
-)
+st.set_page_config(page_title="Aria", page_icon="🤖", layout="centered")
+st.markdown(APPLE_CSS, unsafe_allow_html=True)
 
-st.title("🤖 Aria — Customer Support Assistant")
+# ── Session state init ─────────────────────────────────────
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "docs_cleared" not in st.session_state:
+    st.session_state.docs_cleared = False
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
 
-# ── Mode selector ──────────────────────────────────────────
-mode = st.radio(
-    "Chat mode",
-    ["💬 Normal Chat", "📄 Document Chat"],
-    horizontal=True
-)
-st.caption("Powered by LLaMA 3 via Groq")
-
-# ── Sidebar: Settings ──────────────────────────────────────
+# ── Sidebar ────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Settings")
-    model = st.selectbox(
-        "Choose model",
-        ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"],
-        index=0
-    )
-    temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
-    st.divider()
-    st.markdown("**Tech stack**")
-    st.markdown("- LLM: LLaMA 3 via Groq")
-    st.markdown("- UI: Streamlit")
-    st.markdown("- Hosting: Streamlit Cloud")
+    st.markdown(LOGO_HTML, unsafe_allow_html=True)
+
+    st.markdown(LABEL_HTML.format("Model"), unsafe_allow_html=True)
+    model = st.selectbox("model", MODELS, index=0, label_visibility="collapsed")
+
+    st.markdown(LABEL_HTML.format("Temperature"), unsafe_allow_html=True)
+    temperature = st.slider("temperature", 0.0, 1.0, DEFAULT_TEMPERATURE, 0.1, label_visibility="collapsed")
+
     st.divider()
 
-    # ── Document Upload ────────────────────────────────────
+    st.markdown(LABEL_HTML.format("Mode"), unsafe_allow_html=True)
+    mode = st.radio(
+        "mode",
+        ["💬 Normal Chat", "📁 Document Chat"],
+        label_visibility="collapsed"
+    )
+
     docs_ready = False
 
-    if mode == "📄 Document Chat":
-        st.header("📁 Upload Documents")
-        st.caption("Supports PDF, DOCX, TXT — multiple files allowed")
+    if mode == "📁 Document Chat":
+        st.divider()
+        st.markdown(LABEL_HTML.format("Documents"), unsafe_allow_html=True)
 
         uploaded_files = st.file_uploader(
-            "Choose files",
-            type=["pdf", "docx", "txt"],
-            accept_multiple_files=True    # ← key change
+            "Upload files",
+            type=SUPPORTED_TYPES,
+            accept_multiple_files=True,
+            label_visibility="collapsed",
+            key=f"uploader_{st.session_state.uploader_key}"
         )
 
-        if uploaded_files:
-            with st.spinner(f"Processing {len(uploaded_files)} file(s)..."):
-                try:
-                    # Save all files to temp paths
-                    file_paths = []
-                    for uploaded_file in uploaded_files:
-                        ext = uploaded_file.name.rsplit(".", 1)[-1].lower()
-                        with tempfile.NamedTemporaryFile(
-                            delete=False, suffix=f".{ext}"
-                        ) as tmp:
-                            tmp.write(uploaded_file.read())
-                            tmp.flush()
-                            file_paths.append((tmp.name, uploaded_file.name))
+        if uploaded_files and not st.session_state.docs_cleared:
+            docs_ready = handle_file_upload(uploaded_files)
+        elif uploaded_files and st.session_state.docs_cleared:
+            st.session_state.docs_cleared = False
 
-                    # Process all files
-                    results = process_files(file_paths)
-                    docs_ready = True
+        if st.button("🗑️ Clear documents"):
+            clear_index()
+            st.session_state.docs_cleared = True
+            st.session_state.messages = []
+            st.session_state.uploader_key += 1
+            st.rerun()
 
-                    # Show per-file chunk counts
-                    for filename, count in results.items():
-                        st.success(f"✅ {filename}: {count} chunks")
-
-                except Exception as e:
-                    st.error(f"Processing failed: {str(e)}")
-                    st.stop()
+    st.divider()
+    st.markdown(TECH_STACK_HTML, unsafe_allow_html=True)
+    st.divider()
 
     if st.button("🗑️ Clear conversation"):
         st.session_state.messages = []
         st.rerun()
 
-# ── System prompts ─────────────────────────────────────────
-SYSTEM_PROMPT = """You are Aria, a friendly and helpful customer support assistant. 
-You help customers with their queries clearly and concisely."""
+# ── Header ─────────────────────────────────────────────────
+st.markdown(HEADER_HTML, unsafe_allow_html=True)
 
-RAG_SYSTEM_PROMPT = """You are Aria, a helpful assistant. Answer the user's question 
-using ONLY the context provided. Each context chunk is labeled with its source document.
-If the answer isn't in the context, say so honestly.
-When relevant, mention which document the information came from."""
+# ── Welcome screen ─────────────────────────────────────────
+if not st.session_state.messages:
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    for i, (icon, title, subtitle) in enumerate(SUGGESTIONS):
+        with (col1 if i % 2 == 0 else col2):
+            st.markdown(suggestion_card_html(icon, title, subtitle), unsafe_allow_html=True)
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
-# ── Chat history init ──────────────────────────────────────
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# ── Render existing messages ───────────────────────────────
+# ── Render messages ────────────────────────────────────────
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -109,30 +106,21 @@ if prompt := st.chat_input("Ask Aria anything..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-
-        # ── Build messages list for Groq ───────────────────
-        if mode == "📄 Document Chat" and docs_ready:
+        context = ""
+        if mode == "📁 Document Chat" and docs_ready:
             with st.spinner("Searching documents..."):
                 context = query_rag(prompt)
-            rag_system_msg = {
-                "role": "system",
-                "content": f"{RAG_SYSTEM_PROMPT}\n\nCONTEXT:\n{context}"
-            }
-            messages_to_send = [rag_system_msg] + st.session_state.messages
 
-        elif mode == "📄 Document Chat" and not docs_ready:
-            messages_to_send = [
-                {"role": "system", "content": RAG_SYSTEM_PROMPT},
-                *st.session_state.messages
-            ]
+        messages_to_send = build_messages(
+            mode=mode,
+            docs_ready=docs_ready,
+            prompt=prompt,
+            messages=st.session_state.messages,
+            system_prompt=SYSTEM_PROMPT,
+            rag_system_prompt=RAG_SYSTEM_PROMPT,
+            context=context
+        )
 
-        else:
-            messages_to_send = [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                *st.session_state.messages
-            ]
-
-        # ── Stream the response ─────────────────────────────
         stream = client.chat.completions.create(
             model=model,
             temperature=temperature,
@@ -147,3 +135,6 @@ if prompt := st.chat_input("Ask Aria anything..."):
         )
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
+
+# ── Footer ─────────────────────────────────────────────────
+st.markdown(footer_html(AUTHOR_NAME, AUTHOR_GITHUB, AUTHOR_LINKEDIN), unsafe_allow_html=True)
