@@ -1,6 +1,6 @@
 # 🤖 Aria — Conversational AI Chatbot
 
-A lightweight customer support chatbot built with LLaMA 3 and deployed on Streamlit Cloud.
+A production-grade AI chatbot with multi-document RAG, streaming responses, and support for PDF, DOCX, and TXT files. Built with LLaMA 3 via Groq and deployed on Streamlit Cloud.
 
 🔗 **Live Demo:** [Click here](https://portfoliochatbot-7qfqqmjdqdxepxv3c9zdpe.streamlit.app/)
 
@@ -10,7 +10,7 @@ A lightweight customer support chatbot built with LLaMA 3 and deployed on Stream
 
 Aria is an AI-powered customer support assistant that can hold multi-turn conversations, remember context within a session, and respond in a friendly, helpful tone.
 
-This project was built as part of a portfolio to demonstrate end-to-end ML application development — from local development to cloud deployment.
+This project was built as part of a portfolio to demonstrate end-to-end ML application development — from local development to cloud deployment — including RAG pipelines, vector databases, and production-safe dependency management.
 
 ---
 
@@ -18,21 +18,34 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 
 | Layer | Tool |
 |-------|------|
-| LLM | LLaMA 3.1 (8B) via Groq API |
+| LLM | LLaMA 3.1 (8B) / LLaMA 3.3 (70B) via Groq API |
 | UI | Streamlit |
 | Hosting | Streamlit Cloud (free tier) |
 | Language | Python 3.9 |
-| API Client | Groq SDK |
+| Embeddings | HuggingFace Inference API (all-MiniLM-L6-v2) |
+| Vector DB | Pinecone (serverless) |
+| PDF Parsing | pypdf |
+| DOCX Parsing | python-docx |
+| TXT Parsing | Python built-in |
 
 ---
 
 ## ✨ Features
 
+### 💬 Normal Chat
 - Multi-turn conversation with session memory
-- Model selector — switch between LLaMA 3.1 8B and 70B
+- Model selector — switch between LLaMA 3.1 8B and 3.3 70B
 - Temperature control for response creativity
+- Streaming responses (token-by-token like ChatGPT)
 - Clear conversation button
-- Fully deployed and publicly accessible
+
+### 📁 Document Chat (RAG)
+- Upload multiple files simultaneously (PDF, DOCX, TXT)
+- Semantic search via Pinecone vector database
+- Free embeddings via HuggingFace Inference API — no OpenAI key needed
+- Answers grounded strictly in document context
+- Source attribution — Aria tells you which document the answer came from
+- Streaming responses for document chat too
 
 ---
 
@@ -40,49 +53,91 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 
 1. Clone the repository
 ```bash
-   git clone https://github.com/YOUR_USERNAME/portfolio-chatbot.git
-   cd portfolio-chatbot
+git clone https://github.com/pratzzeee/portfolio_chatbot.git
+cd portfolio_chatbot
 ```
 
 2. Create and activate a virtual environment
 ```bash
-   python3 -m venv venv
-   source venv/bin/activate
+python3.9 -m venv venv
+source venv/bin/activate
 ```
 
 3. Install dependencies
 ```bash
-   pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-4. Create a `.env` file and add your Groq API key
+4. Create a `.env` file with your API keys
+```bash
+cp .env.example .env
+# Edit .env and add your keys
+```
 
 5. Run the app
 ```bash
-   streamlit run app.py
+streamlit run app.py
 ```
+
+---
+
+## 🔑 Environment Variables
+
+```
+GROQ_API_KEY=your_groq_api_key
+PINECONE_API_KEY=your_pinecone_api_key
+HF_API_TOKEN=your_huggingface_token
+```
+
+> Get your keys:
+> - Groq: [console.groq.com](https://console.groq.com)
+> - Pinecone: [app.pinecone.io](https://app.pinecone.io)
+> - HuggingFace: [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) — enable "Make calls to Inference Providers"
 
 ---
 
 ## 📁 Project Structure
-portfolio-chatbot/
-├── app.py              # Main application
-├── requirements.txt    # Dependencies
-├── .env                # API key (not committed)
-├── .gitignore          # Ignores venv and .env
-└── README.md           # This file
+
+```
+portfolio_chatbot/
+├── app.py            # Streamlit UI + chat logic
+├── rag.py            # RAG engine (extract, chunk, embed, query)
+├── requirements.txt  # Minimal clean dependencies
+├── CHANGELOG.md      # Full version history
+├── .env              # API keys (not committed)
+├── .env.example      # Documents required API keys
+├── .gitignore        # Ignores venv, .env, __pycache__
+└── README.md         # This file
+```
+
 ---
 
 ## 🔮 Roadmap
 
-- [ ] Add RAG — let users upload a PDF and chat with it
-- [ ] Add intent recognition for customer support routing
-- [ ] Connect to a knowledge base for domain-specific answers
-- [ ] Deploy on custom domain
+| Version | Feature | Status |
+|---------|---------|--------|
+| v1.0.0 | Core chatbot via Groq + LLaMA 3 | ✅ Complete |
+| v2.1.0 | RAG PDF Chat with Pinecone | ✅ Complete |
+| v3.0.0 | Streaming responses | ✅ Complete |
+| v4.0.0 | Multi-document chat (PDF/DOCX/TXT) | ✅ Complete |
+| v5.0.0 | Persistent chat history | 🔲 Planned |
+| v5.1.0 | UI Upgrade | 🔲 Planned |
+
+---
+
+## 🧠 Key Engineering Decisions
+
+| Decision | Reason |
+|----------|--------|
+| No LangChain | Python 3.14 conflicts on Streamlit Cloud |
+| HF Inference API over sentence-transformers | No torch dependency — works on any Python version |
+| Pinecone serverless | Free tier, no infrastructure to manage |
+| Groq over OpenAI | Free tier, fastest LLaMA inference available |
+| Hand-written requirements.txt | pip freeze includes macOS-local paths that break Linux deploys |
 
 ---
 
 ## 👤 Author
 
-**Prathyush**  
+**Prathyush Maniyam**  
 [GitHub](https://github.com/pratzzeee) · [LinkedIn](https://linkedin.com/in/prathyushmaniyam)
