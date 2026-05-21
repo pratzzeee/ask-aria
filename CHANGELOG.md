@@ -4,6 +4,19 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 
 ---
 
+## [v3.0.0] - 2026-05-20 — Feature 2: Streaming Responses
+
+### Added
+- Token-by-token streaming via Groq `stream=True`
+- `st.write_stream()` for live rendering in Streamlit
+- Spinner scoped to RAG PDF search only
+
+### Changed
+- Removed full-response blocking spinner
+- Response now appears progressively like ChatGPT
+
+---
+
 ## [v2.1.0] - 2026-05-19 — Feature 1: RAG PDF Chat
 
 ### Added
@@ -52,5 +65,6 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 |---|---|---|
 | v1.0.0 | Core chatbot via Groq | ✅ Complete |
 | v2.1.0 | RAG PDF Chat with Pinecone | ✅ Complete |
-| v3.0.0 | Streaming responses | 🔲 Planned |
-| v3.1.0 | Multi-PDF support | 🔲 Planned |
+| v3.0.0 | Streaming responses | ✅ Complete |
+| v4.0.0 | Multi-PDF support | 🔲 Planned |
+| v4.1.0 | Persistent chat history | 🔲 Planned |
