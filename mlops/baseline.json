@@ -1,0 +1,305 @@
+{
+  "saved_at": "2026-05-26 17:54:28",
+  "config": {
+    "chunk_size": 500,
+    "chunk_overlap": 50,
+    "top_k": 6,
+    "index_name": "pdf-rag-index",
+    "embedding_dim": 384,
+    "model": "llama-3.1-8b-instant"
+  },
+  "summary": {
+    "avg_latency_s": 1.461,
+    "avg_embedding_s": 0.237,
+    "avg_pinecone_s": 0.685,
+    "avg_llm_s": 0.539,
+    "avg_hit_rate_pct": 55.8,
+    "avg_faithfulness": 6.3,
+    "avg_relevance": 7.6,
+    "avg_completeness": 6.1,
+    "avg_overall": 6.7,
+    "num_questions": 10
+  },
+  "results": [
+    {
+      "id": "q1",
+      "question": "What is the candidate's name?",
+      "expected_answer": "Prathyush Maniyam",
+      "category": "factual",
+      "difficulty": "easy",
+      "latency": {
+        "embedding_s": 0.192,
+        "pinecone_s": 0.557,
+        "llm_s": 0.184,
+        "total_s": 0.933,
+        "answer": "The candidate's name is Prathyush Maniyam."
+      },
+      "actual_answer": "The candidate's name is Prathyush Maniyam.",
+      "retrieval": {
+        "hit_rate_pct": 100.0,
+        "keywords_found": 2,
+        "keywords_total": 2,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\n,LangChain,Snowflake Cortex AI, andMicrosoft Copilot. Leadsend-to-end SDLCownership,prompt\nengineeringstrategy,model monitoringdashboards, andLLM API costoptimization. Committed toresponsible AI,\nenterprise security, andregulatory compliance.\nTechnical S..."
+      },
+      "llm_judge": {
+        "faithfulness": 10,
+        "relevance": 10,
+        "completeness": 10,
+        "reasoning": "The actual answer is identical to the expected answer, indicating perfect faithfulness, relevance, and completeness.",
+        "overall": 10.0
+      }
+    },
+    {
+      "id": "q2",
+      "question": "What was his role at Castus Info Solutions?",
+      "expected_answer": "Senior Data Scientist",
+      "category": "factual",
+      "difficulty": "easy",
+      "latency": {
+        "embedding_s": 0.365,
+        "pinecone_s": 1.295,
+        "llm_s": 0.532,
+        "total_s": 2.192,
+        "answer": "The person's role at Castus Info Solutions was Data Scientist, and they worked there from December 2021 to June 2023."
+      },
+      "actual_answer": "The person's role at Castus Info Solutions was Data Scientist, and they worked there from December 2021 to June 2023.",
+      "retrieval": {
+        "hit_rate_pct": 66.7,
+        "keywords_found": 2,
+        "keywords_total": 3,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nt engineering, RAG design, andMLOps; evaluatedemerging AI\ntechnologies(Vertex AI,Snowflake Cortex AI) and recommended adoption roadmaps, improving team velocity by 28%.\nData Scientist, Castus Info Solutions, Hyderabad, IndiaDec 2021 \u2013 Jun 2023\n\u2022BuiltLLM-..."
+      },
+      "llm_judge": {
+        "faithfulness": 8,
+        "relevance": 10,
+        "completeness": 6,
+        "reasoning": "The actual answer is mostly faithful to the expected answer, but it adds an extra detail about the duration of employment, which affects its completeness score.",
+        "overall": 8.0
+      }
+    },
+    {
+      "id": "q3",
+      "question": "What university did he attend for his Masters?",
+      "expected_answer": "University of Texas at Dallas",
+      "category": "factual",
+      "difficulty": "easy",
+      "latency": {
+        "embedding_s": 0.212,
+        "pinecone_s": 0.621,
+        "llm_s": 0.414,
+        "total_s": 1.247,
+        "answer": "Prathyush Maniyam attended The University of Texas at Dallas for his M.S. in Business Analytics and Artificial Intelligence."
+      },
+      "actual_answer": "Prathyush Maniyam attended The University of Texas at Dallas for his M.S. in Business Analytics and Artificial Intelligence.",
+      "retrieval": {
+        "hit_rate_pct": 100.0,
+        "keywords_found": 3,
+        "keywords_total": 3,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nviaMLflow60% cost reduction, 25% accuracy gain.\nEducation\nM.S. Business Analytics and Artificial Intelligence, The University of Texas at Dallas Aug 2023 \u2013 May 2025\nCertifications (In Progress): Microsoft Certified: Azure AI Engineer Associate\u00b7Google Clo..."
+      },
+      "llm_judge": {
+        "faithfulness": 10,
+        "relevance": 10,
+        "completeness": 9,
+        "reasoning": "The actual answer is a direct match to the expected answer, with the only minor difference being the inclusion of the degree name, which does not affect the overall accuracy.",
+        "overall": 9.7
+      }
+    },
+    {
+      "id": "q4",
+      "question": "What percentage did he reduce training cost by?",
+      "expected_answer": "68%",
+      "category": "numerical",
+      "difficulty": "medium",
+      "latency": {
+        "embedding_s": 0.202,
+        "pinecone_s": 0.882,
+        "llm_s": 0.57,
+        "total_s": 1.654,
+        "answer": "There is no specific percentage mentioned for reducing training cost by in the given text. However, for inference, there is a 60% cost reduction."
+      },
+      "actual_answer": "There is no specific percentage mentioned for reducing training cost by in the given text. However, for inference, there is a 60% cost reduction.",
+      "retrieval": {
+        "hit_rate_pct": 0,
+        "keywords_found": 0,
+        "keywords_total": 0,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nviaMLflow60% cost reduction, 25% accuracy gain.\nEducation\nM.S. Business Analytics and Artificial Intelligence, The University of Texas at Dallas Aug 2023 \u2013 May 2025\nCertifications (In Progress): Microsoft Certified: Azure AI Engineer Associate\u00b7Google Clo..."
+      },
+      "llm_judge": {
+        "faithfulness": 8,
+        "relevance": 9,
+        "completeness": 6,
+        "reasoning": "The actual answer accurately reflects the lack of specific percentage in the text, but infers a different percentage, which affects completeness.",
+        "overall": 7.7
+      }
+    },
+    {
+      "id": "q5",
+      "question": "What LLM fine-tuning techniques did he use?",
+      "expected_answer": "LoRA and PEFT with Hugging Face Transformers and PyTorch",
+      "category": "technical",
+      "difficulty": "medium",
+      "latency": {
+        "embedding_s": 0.217,
+        "pinecone_s": 0.56,
+        "llm_s": 0.411,
+        "total_s": 1.188,
+        "answer": "Prathyush Maniyam used the following LLM fine-tuning techniques:\n\n1. End-to-end LoRA/QLoCA (PEFT) fine-tuning \n2. Prompt engineering templates \n3. LLM evaluation frameworks via MLflow"
+      },
+      "actual_answer": "Prathyush Maniyam used the following LLM fine-tuning techniques:\n\n1. End-to-end LoRA/QLoCA (PEFT) fine-tuning \n2. Prompt engineering templates \n3. LLM evaluation frameworks via MLflow",
+      "retrieval": {
+        "hit_rate_pct": 85.7,
+        "keywords_found": 6,
+        "keywords_total": 7,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nI observability KPIdashboards reducing resolution time 35%.\nEnterprise RAG Knowledge Base 2024\nDesignedRAG pipelinewithSemantic Kernel,Azure OpenAI, hybridvector retrieval,prompt versioning,FastAPI,\nDocker/CI/CD, andenterprise securitycontrols 40% answer..."
+      },
+      "llm_judge": {
+        "faithfulness": 8,
+        "relevance": 9,
+        "completeness": 6,
+        "reasoning": "The actual answer is mostly faithful to the expected answer, but it adds extra information and omits the specific frameworks (Hugging Face Transformers and PyTorch) mentioned in the expected answer.",
+        "overall": 7.7
+      }
+    },
+    {
+      "id": "q6",
+      "question": "How many years of industry experience does he have?",
+      "expected_answer": "4+ years",
+      "category": "factual",
+      "difficulty": "easy",
+      "latency": {
+        "embedding_s": 0.226,
+        "pinecone_s": 0.609,
+        "llm_s": 0.863,
+        "total_s": 1.698,
+        "answer": "To find out his total years of experience, I'll have to sum up the years of experience mentioned in his bio.\n\nHe had the following positions:\n1. Data Scientist, Castus Info Solutions (Dec 2021 \u2013 Jun 2023) = 1.5 years\n2. Junior Data Scientist, Tech Mahindra (Jun 2020 \u2013 Dec 2021) = 1.5 years\n3. AI Engineer, Community Dreams Foundation ( Aug 2024 \u2013 Present) = 0.3 years (since August 2024 is approximately 1 year but he has not started his 2nd year)\n\nAs we do not know how long he was before 2020, his approximate total years experience is around 2.8 years"
+      },
+      "actual_answer": "To find out his total years of experience, I'll have to sum up the years of experience mentioned in his bio.\n\nHe had the following positions:\n1. Data Scientist, Castus Info Solutions (Dec 2021 \u2013 Jun 2023) = 1.5 years\n2. Junior Data Scientist, Tech Mahindra (Jun 2020 \u2013 Dec 2021) = 1.5 years\n3. AI Engineer, Community Dreams Foundation ( Aug 2024 \u2013 Present) = 0.3 years (since August 2024 is approximately 1 year but he has not started his 2nd year)\n\nAs we do not know how long he was before 2020, his approximate total years experience is around 2.8 years",
+      "retrieval": {
+        "hit_rate_pct": 0.0,
+        "keywords_found": 0,
+        "keywords_total": 1,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nviaMLflow60% cost reduction, 25% accuracy gain.\nEducation\nM.S. Business Analytics and Artificial Intelligence, The University of Texas at Dallas Aug 2023 \u2013 May 2025\nCertifications (In Progress): Microsoft Certified: Azure AI Engineer Associate\u00b7Google Clo..."
+      },
+      "llm_judge": {
+        "faithfulness": 2,
+        "relevance": 8,
+        "completeness": 6,
+        "reasoning": "The actual answer is not factually consistent with the expected answer, as it provides a calculation of years of experience rather than a direct statement of 4+ years.",
+        "overall": 5.3
+      }
+    },
+    {
+      "id": "q7",
+      "question": "What improvement did he achieve in summary accuracy?",
+      "expected_answer": "19% improvement over the base model",
+      "category": "numerical",
+      "difficulty": "medium",
+      "latency": {
+        "embedding_s": 0.233,
+        "pinecone_s": 0.605,
+        "llm_s": 0.384,
+        "total_s": 1.222,
+        "answer": "According to the information provided, in the LLM Fine-Tuning Pipeline for Domain Adaptation 2024, an end-to-end LoRA/QLoCA (PEFT) fine-tuning with Hugging Face and PyTorch achieved a:\n\n- 60% cost reduction\n- 25% accuracy gain"
+      },
+      "actual_answer": "According to the information provided, in the LLM Fine-Tuning Pipeline for Domain Adaptation 2024, an end-to-end LoRA/QLoCA (PEFT) fine-tuning with Hugging Face and PyTorch achieved a:\n\n- 60% cost reduction\n- 25% accuracy gain",
+      "retrieval": {
+        "hit_rate_pct": 75.0,
+        "keywords_found": 3,
+        "keywords_total": 4,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nI observability KPIdashboards reducing resolution time 35%.\nEnterprise RAG Knowledge Base 2024\nDesignedRAG pipelinewithSemantic Kernel,Azure OpenAI, hybridvector retrieval,prompt versioning,FastAPI,\nDocker/CI/CD, andenterprise securitycontrols 40% answer..."
+      },
+      "llm_judge": {
+        "faithfulness": 0,
+        "relevance": 0,
+        "completeness": 0,
+        "reasoning": "The actual answer does not mention summary accuracy improvement, instead providing unrelated metrics.",
+        "overall": 0.0
+      }
+    },
+    {
+      "id": "q8",
+      "question": "What degree is he pursuing?",
+      "expected_answer": "Master of Science in Business Analytics and Artificial Intelligence",
+      "category": "factual",
+      "difficulty": "easy",
+      "latency": {
+        "embedding_s": 0.228,
+        "pinecone_s": 0.545,
+        "llm_s": 0.494,
+        "total_s": 1.267,
+        "answer": "The individual is pursuing an M.S. in Business Analytics and Artificial Intelligence from The University of Texas at Dallas."
+      },
+      "actual_answer": "The individual is pursuing an M.S. in Business Analytics and Artificial Intelligence from The University of Texas at Dallas.",
+      "retrieval": {
+        "hit_rate_pct": 66.7,
+        "keywords_found": 4,
+        "keywords_total": 6,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nviaMLflow60% cost reduction, 25% accuracy gain.\nEducation\nM.S. Business Analytics and Artificial Intelligence, The University of Texas at Dallas Aug 2023 \u2013 May 2025\nCertifications (In Progress): Microsoft Certified: Azure AI Engineer Associate\u00b7Google Clo..."
+      },
+      "llm_judge": {
+        "faithfulness": 9,
+        "relevance": 10,
+        "completeness": 8,
+        "reasoning": "The actual answer is almost identical to the expected answer, but lacks the word 'degree' which is implied but not explicitly stated.",
+        "overall": 9.0
+      }
+    },
+    {
+      "id": "q9",
+      "question": "What is the capital of France?",
+      "expected_answer": "This information is not in the document",
+      "category": "out_of_scope",
+      "difficulty": "easy",
+      "latency": {
+        "embedding_s": 0.209,
+        "pinecone_s": 0.568,
+        "llm_s": 0.613,
+        "total_s": 1.39,
+        "answer": "I'm unable to verify the capital of France."
+      },
+      "actual_answer": "I'm unable to verify the capital of France.",
+      "retrieval": {
+        "hit_rate_pct": 0.0,
+        "keywords_found": 0,
+        "keywords_total": 3,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\n,LangChain,Snowflake Cortex AI, andMicrosoft Copilot. Leadsend-to-end SDLCownership,prompt\nengineeringstrategy,model monitoringdashboards, andLLM API costoptimization. Committed toresponsible AI,\nenterprise security, andregulatory compliance.\nTechnical S..."
+      },
+      "llm_judge": {
+        "faithfulness": 8,
+        "relevance": 10,
+        "completeness": 10,
+        "reasoning": "The actual answer accurately conveys the lack of information about the capital of France, aligning with the expected answer.",
+        "overall": 9.3
+      }
+    },
+    {
+      "id": "q10",
+      "question": "Summarise his overall profile as a data scientist",
+      "expected_answer": "Senior Data Scientist with 4+ years experience, specialising in LLMs, RAG, fine-tuning, and ML pipelines",
+      "category": "summarisation",
+      "difficulty": "hard",
+      "latency": {
+        "embedding_s": 0.288,
+        "pinecone_s": 0.608,
+        "llm_s": 0.922,
+        "total_s": 1.818,
+        "answer": "Based on the provided information, here is a summary of the profile as a data scientist:\n\n**Key Strengths:**\n\n1. Expertise in building predictive models using XGBoost, Random Forests, and Scikit-learn.\n2. Strong knowledge of MLflow, A/B testing frameworks, and segmentation models.\n3. Experience with scalable ML workflows on AWS SageMaker and GCP BigQuery.\n4. Proficient in AI platforms and cloud services including Azure AI Foundry, Azure OpenAI, and Google Cloud Vertex AI.\n5. Strong understanding of AI orchestration and agents, including Semantic Kernel and LangChain.\n\n**Technologies and Tools:**\n\n1. Programming languages: PyTorch, TensorFlow, XGBoost, Scikit-learn\n2. Cloud platforms: Azure, Google Cloud, AWS\n3. Databases: PostgreSQL, MongoDB, Snowflake, Tableau, Power BI\n4. ML development tools: MLflow, Azure ML, GCP Vertex AI\n5. AI development tools: Azure OpenAI, LangChain, Snowflake Cortex AI\n\n**Achievements:**\n\n1. Reduced churn by 7% and improved first-contact resolution by 16% as a Data Scientist at Castus Info Solutions.\n2. Reduced the cost of AI API operations by 60% and improved accuracy by 25% using MLflow.\n3. Improved team velocity by 28% and knowledge retrieval workflows by 16% as an AI Engineer at Community Dreams Foundation.\n\n**Education and Certifications:**\n\n1. Master's degree in Business Analytics and Artificial Intelligence from The University of Texas at Dallas (May 2025).\n2. Microsoft Certified: Azure AI Engineer Associate (in progress).\n3. Google Cloud Professional ML Engineer (in progress).\n4. Google Cloud Generative AI Engineer (in progress)."
+      },
+      "actual_answer": "Based on the provided information, here is a summary of the profile as a data scientist:\n\n**Key Strengths:**\n\n1. Expertise in building predictive models using XGBoost, Random Forests, and Scikit-learn.\n2. Strong knowledge of MLflow, A/B testing frameworks, and segmentation models.\n3. Experience with scalable ML workflows on AWS SageMaker and GCP BigQuery.\n4. Proficient in AI platforms and cloud services including Azure AI Foundry, Azure OpenAI, and Google Cloud Vertex AI.\n5. Strong understanding of AI orchestration and agents, including Semantic Kernel and LangChain.\n\n**Technologies and Tools:**\n\n1. Programming languages: PyTorch, TensorFlow, XGBoost, Scikit-learn\n2. Cloud platforms: Azure, Google Cloud, AWS\n3. Databases: PostgreSQL, MongoDB, Snowflake, Tableau, Power BI\n4. ML development tools: MLflow, Azure ML, GCP Vertex AI\n5. AI development tools: Azure OpenAI, LangChain, Snowflake Cortex AI\n\n**Achievements:**\n\n1. Reduced churn by 7% and improved first-contact resolution by 16% as a Data Scientist at Castus Info Solutions.\n2. Reduced the cost of AI API operations by 60% and improved accuracy by 25% using MLflow.\n3. Improved team velocity by 28% and knowledge retrieval workflows by 16% as an AI Engineer at Community Dreams Foundation.\n\n**Education and Certifications:**\n\n1. Master's degree in Business Analytics and Artificial Intelligence from The University of Texas at Dallas (May 2025).\n2. Microsoft Certified: Azure AI Engineer Associate (in progress).\n3. Google Cloud Professional ML Engineer (in progress).\n4. Google Cloud Generative AI Engineer (in progress).",
+      "retrieval": {
+        "hit_rate_pct": 63.6,
+        "keywords_found": 7,
+        "keywords_total": 11,
+        "context_preview": "[Source: Prathyush_Maniyam_Resume_AIE_MK.pdf]\nby 16%\nand reducing agent workload by 22%.\n\u2022Delivered scalableML workflowsonAWS SageMakerandGCP BigQuery; appliedresponsible AIpractices in aregu-\nlated enterprise environment; collaborated with cross-functionaldata engineering, platform, and business te..."
+      },
+      "llm_judge": {
+        "faithfulness": 0,
+        "relevance": 0,
+        "completeness": 0,
+        "reasoning": "The actual answer is completely unrelated to the expected answer, which was a summary of a senior data scientist with 4+ years experience specialising in LLMs, RAG, fine-tuning, and ML pipelines.",
+        "overall": 0.0
+      }
+    }
+  ]
+}
