@@ -1,6 +1,6 @@
-# 🤖 Aria — Conversational AI Chatbot
+# 🤖 ask-aria — Conversational AI Chatbot
 
-A production-grade AI chatbot with multi-document RAG, streaming responses, evaluation dashboard, and support for PDF, DOCX, and TXT files. Built with LLaMA 3 via Groq and deployed on Streamlit Cloud.
+A production-grade AI chatbot with multi-document RAG, streaming responses, MLOps evaluation pipeline, and support for PDF, DOCX, and TXT files. Built with LLaMA 3 via Groq and deployed on Streamlit Cloud.
 
 🔗 **Live Demo:** [Click here](https://portfoliochatbot-7qfqqmjdqdxepxv3c9zdpe.streamlit.app/)
 
@@ -8,9 +8,9 @@ A production-grade AI chatbot with multi-document RAG, streaming responses, eval
 
 ## 📌 Project Overview
 
-Aria is an AI-powered customer support assistant that can hold multi-turn conversations, remember context within a session, and respond in a friendly, helpful tone.
+ask-aria is an AI-powered customer support assistant that can hold multi-turn conversations, remember context within a session, and respond in a friendly, helpful tone.
 
-This project was built as part of a portfolio to demonstrate end-to-end ML application development — from local development to cloud deployment — including RAG pipelines, vector databases, production-safe dependency management, and a full evaluation framework to measure system performance.
+This project was built as part of a portfolio to demonstrate end-to-end ML application development — from local development to cloud deployment — including RAG pipelines, vector databases, production-safe dependency management, a full evaluation framework, and an MLOps pipeline to systematically measure and improve system performance.
 
 ---
 
@@ -57,6 +57,27 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 - Interactive Plotly charts for non-technical stakeholders
 - Run via: `streamlit run eval_dashboard.py`
 
+### 🔬 MLOps Evaluation Pipeline
+- Save any eval run as baseline for future comparisons
+- Log named experiments with config and description
+- Side-by-side vs Baseline comparison with green/red deltas
+- Experiment tracker stores all runs in JSON for full history
+- 4 experiments run — finding: baseline config optimal for 8B model
+- Run via: `streamlit run eval_dashboard.py`
+
+---
+
+## 🔬 MLOps Findings
+
+| Experiment | CHUNK_SIZE | TOP_K | Retrieval | Overall | Verdict |
+|---|---|---|---|---|---|
+| Baseline | 500 | 6 | 55.8% | 8.4/10 | ✅ Optimal |
+| chunk_size_800 | 800 | 6 | 66.7% | 7.4/10 | ❌ LLM confused |
+| chunk_size_650 | 650 | 6 | 56.7% | 8.4/10 | ➡️ No gain |
+| top_k_10 | 500 | 10 | 67.6% | 7.1/10 | ❌ Too much context |
+
+**Key insight:** More context improves retrieval (+12%) but hurts 8B LLM quality (-1.3 pts). Baseline config is optimal for `llama-3.1-8b-instant`.
+
 ---
 
 ## 🚀 Run Locally
@@ -64,12 +85,12 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 1. Clone the repository
 ```bash
 git clone https://github.com/pratzzeee/ask-aria.git
-cd portfolio_chatbot
+cd ask-aria
 ```
 
 2. Create and activate a virtual environment
 ```bash
-python3.9 -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 ```
 
@@ -114,16 +135,21 @@ HF_API_TOKEN=your_huggingface_token
 ## 📁 Project Structure
 
 ```
-portfolio_chatbot/
+ask-aria/
 ├── app.py                  # Streamlit UI — chat interface
 ├── rag.py                  # RAG engine (extract, chunk, embed, query, clear)
 ├── config.py               # Models, prompts, constants, author info
 ├── styles.py               # All CSS and HTML string templates
 ├── utils.py                # Helper functions (file handling, message building)
 ├── eval.py                 # Evaluation engine (latency, retrieval, LLM-judge)
-├── eval_dashboard.py       # Streamlit evaluation dashboard
+├── eval_dashboard.py       # Streamlit evaluation + MLOps dashboard
 ├── eval_data/
 │   └── test_qa.json        # 10 golden Q&A pairs for evaluation
+├── mlops/
+│   ├── __init__.py
+│   ├── experiment_tracker.py  # Save/load/compare experiments
+│   ├── baseline.json          # Saved baseline metrics
+│   └── experiments.json       # All experiment results
 ├── .streamlit/
 │   └── config.toml         # Streamlit theme configuration
 ├── requirements.txt        # Minimal clean dependencies
@@ -146,8 +172,9 @@ portfolio_chatbot/
 | v4.0.0 | Multi-document chat (PDF/DOCX/TXT) | ✅ Complete |
 | v5.0.0 | UI upgrade + code refactor | ✅ Complete |
 | v6.0.0 | RAG evaluation dashboard | ✅ Complete |
-| v7.0.0 | Performance & caching improvements | 🔲 Planned |
-| v7.1.0 | Add more LLM models (Mixtral, Gemma) | 🔲 Planned |
+| v7.0.0 | MLOps evaluation pipeline | ✅ Complete |
+| v8.0.0 | Semantic chunking strategy | 🔲 Planned |
+| v8.1.0 | Usage analytics tracker | 🔲 Planned |
 
 ---
 
@@ -162,6 +189,7 @@ portfolio_chatbot/
 | Hand-written requirements.txt | pip freeze includes macOS-local paths that break Linux deploys |
 | Modular file structure | config/styles/utils split for scalability and maintainability |
 | Evaluation framework | Data-driven improvements — measure before optimising |
+| MLOps pipeline | Systematic experimentation with baseline comparison |
 
 ---
 
