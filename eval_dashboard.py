@@ -2,8 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-from eval import run_full_evaluation, load_golden_dataset
+from eval import run_full_evaluation
 from rag import process_file, clear_index
+from config import CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, INDEX_NAME, EMBEDDING_DIM
+from mlops.experiment_tracker import (
+    save_baseline, load_baseline,
+    save_experiment, compute_summary
+)
 import tempfile
 
 st.set_page_config(
@@ -11,6 +16,10 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# ── Session state init ─────────────────────────────────────
+if "eval_results" not in st.session_state:
+    st.session_state.eval_results = None
 
 # ── Header ─────────────────────────────────────────────────
 st.markdown("""
@@ -24,10 +33,19 @@ st.markdown("""
 
 st.divider()
 
-# ── Sidebar ─────────────────────────────────────────────────
+# ── Current config ─────────────────────────────────────────
+CURRENT_CONFIG = {
+    "chunk_size":    CHUNK_SIZE,
+    "chunk_overlap": CHUNK_OVERLAP,
+    "top_k":         TOP_K,
+    "index_name":    INDEX_NAME,
+    "embedding_dim": EMBEDDING_DIM,
+    "model":         "llama-3.1-8b-instant"
+}
+
+# ── Sidebar ────────────────────────────────────────────────
 with st.sidebar:
     st.header("⚙️ Setup")
-
     st.markdown("**Step 1: Upload your test PDF**")
     uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
 
@@ -47,6 +65,18 @@ with st.sidebar:
     st.divider()
     st.markdown("**Step 2: Run evaluation**")
     run_btn = st.button("🚀 Run Full Evaluation", use_container_width=True)
+    st.divider()
+
+    baseline = load_baseline()
+    if baseline:
+        st.success(f"✅ Baseline exists\n\nsaved: {baseline['saved_at']}")
+        st.markdown(f"""
+        - Overall: `{baseline['summary']['avg_overall']}/10`
+        - Hit Rate: `{baseline['summary']['avg_hit_rate_pct']}%`
+        - Latency: `{baseline['summary']['avg_latency_s']}s`
+        """)
+    else:
+        st.warning("⚠️ No baseline saved yet")
 
     st.divider()
     st.markdown("""
@@ -55,42 +85,81 @@ with st.sidebar:
     - 🎯 Retrieval keyword hit rate
     - 🤖 LLM-as-judge scores
     """)
+    st.divider()
+    st.markdown("**Current config**")
+    st.json(CURRENT_CONFIG)
 
-# ── Main area ──────────────────────────────────────────────
+# ── Run evaluation ─────────────────────────────────────────
 if run_btn:
     if not uploaded_file:
         st.warning("⚠️ Please upload a PDF first.")
         st.stop()
-
-    with st.spinner("Running evaluation on 10 questions... this takes ~2 mins"):
-        results = run_full_evaluation()
-
+    with st.spinner("Running evaluation... this takes ~2 mins"):
+        st.session_state.eval_results = run_full_evaluation()
     st.success("✅ Evaluation complete!")
+
+# ── Show results if available ──────────────────────────────
+if st.session_state.eval_results:
+    results = st.session_state.eval_results
+
+    # ── Save options ───────────────────────────────────────
+    col_save1, col_save2 = st.columns(2)
+
+    with col_save1:
+        if st.button("💾 Save as Baseline", use_container_width=True):
+            save_baseline(results, CURRENT_CONFIG)
+            st.success("✅ Saved as baseline!")
+            st.rerun()
+
+    with col_save2:
+        exp_name = st.text_input("Experiment name", placeholder="e.g. chunk_size_800")
+        exp_desc = st.text_input("Description", placeholder="e.g. Increased chunk size from 500 to 800")
+        if st.button("🧪 Save as Experiment", use_container_width=True):
+            if exp_name:
+                save_experiment(exp_name, exp_desc, results, CURRENT_CONFIG)
+                st.success(f"✅ Saved experiment: {exp_name}")
+            else:
+                st.error("Please enter an experiment name")
+
     st.divider()
 
     # ── Summary metrics ────────────────────────────────────
     st.subheader("📈 Summary")
-
-    avg_latency    = round(sum(r["latency"]["total_s"] for r in results) / len(results), 2)
-    avg_hit_rate   = round(sum(r["retrieval"]["hit_rate_pct"] for r in results) / len(results), 1)
-    avg_faithful   = round(sum(r["llm_judge"]["faithfulness"] for r in results) / len(results), 1)
-    avg_relevance  = round(sum(r["llm_judge"]["relevance"] for r in results) / len(results), 1)
-    avg_complete   = round(sum(r["llm_judge"]["completeness"] for r in results) / len(results), 1)
-    avg_overall    = round(sum(r["llm_judge"]["overall"] for r in results) / len(results), 1)
+    summary = compute_summary(results)
 
     col1, col2, col3, col4, col5, col6 = st.columns(6)
-    col1.metric("Avg Latency",      f"{avg_latency}s")
-    col2.metric("Retrieval Hit %",  f"{avg_hit_rate}%")
-    col3.metric("Faithfulness",     f"{avg_faithful}/10")
-    col4.metric("Relevance",        f"{avg_relevance}/10")
-    col5.metric("Completeness",     f"{avg_complete}/10")
-    col6.metric("Overall Score",    f"{avg_overall}/10")
+    col1.metric("Avg Latency",     f"{summary['avg_latency_s']}s")
+    col2.metric("Retrieval Hit %", f"{summary['avg_hit_rate_pct']}%")
+    col3.metric("Faithfulness",    f"{summary['avg_faithfulness']}/10")
+    col4.metric("Relevance",       f"{summary['avg_relevance']}/10")
+    col5.metric("Completeness",    f"{summary['avg_completeness']}/10")
+    col6.metric("Overall Score",   f"{summary['avg_overall']}/10")
+
+    # ── Baseline comparison ────────────────────────────────
+    baseline = load_baseline()
+    if baseline:
+        st.divider()
+        st.subheader("📊 vs Baseline")
+        b = baseline["summary"]
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        col1.metric("Latency",      f"{summary['avg_latency_s']}s",
+                    delta=f"{round(summary['avg_latency_s'] - b['avg_latency_s'], 3)}s",
+                    delta_color="inverse")
+        col2.metric("Hit Rate",     f"{summary['avg_hit_rate_pct']}%",
+                    delta=f"{round(summary['avg_hit_rate_pct'] - b['avg_hit_rate_pct'], 1)}%")
+        col3.metric("Faithfulness", f"{summary['avg_faithfulness']}/10",
+                    delta=f"{round(summary['avg_faithfulness'] - b['avg_faithfulness'], 1)}")
+        col4.metric("Relevance",    f"{summary['avg_relevance']}/10",
+                    delta=f"{round(summary['avg_relevance'] - b['avg_relevance'], 1)}")
+        col5.metric("Completeness", f"{summary['avg_completeness']}/10",
+                    delta=f"{round(summary['avg_completeness'] - b['avg_completeness'], 1)}")
+        col6.metric("Overall",      f"{summary['avg_overall']}/10",
+                    delta=f"{round(summary['avg_overall'] - b['avg_overall'], 1)}")
 
     st.divider()
 
     # ── Latency chart ──────────────────────────────────────
     st.subheader("⚡ Latency Breakdown")
-
     lat_df = pd.DataFrame([
         {
             "Question": f"Q{r['id'][1:]}",
@@ -100,42 +169,28 @@ if run_btn:
         }
         for r in results
     ])
-
     fig_lat = go.Figure()
     fig_lat.add_trace(go.Bar(name="Embedding", x=lat_df["Question"], y=lat_df["Embedding"], marker_color="#5856d6"))
     fig_lat.add_trace(go.Bar(name="Pinecone",  x=lat_df["Question"], y=lat_df["Pinecone"],  marker_color="#34c759"))
     fig_lat.add_trace(go.Bar(name="LLM",       x=lat_df["Question"], y=lat_df["LLM"],       marker_color="#ff9500"))
-    fig_lat.update_layout(
-        barmode="stack",
-        height=350,
-        margin=dict(t=20, b=20),
-        legend=dict(orientation="h", y=1.1),
-        yaxis_title="Seconds"
-    )
+    fig_lat.update_layout(barmode="stack", height=350, margin=dict(t=20, b=20),
+                          legend=dict(orientation="h", y=1.1), yaxis_title="Seconds")
     st.plotly_chart(fig_lat, use_container_width=True)
 
     st.divider()
 
-    # ── Retrieval quality chart ────────────────────────────
+    # ── Retrieval chart ────────────────────────────────────
     st.subheader("🎯 Retrieval Hit Rate by Question")
-
     ret_df = pd.DataFrame([
         {
-            "Question":  f"Q{r['id'][1:]}: {r['question'][:40]}...",
-            "Hit Rate":  r["retrieval"]["hit_rate_pct"],
-            "Category":  r["category"]
+            "Question": f"Q{r['id'][1:]}: {r['question'][:40]}...",
+            "Hit Rate": r["retrieval"]["hit_rate_pct"],
+            "Category": r["category"]
         }
         for r in results
     ])
-
-    fig_ret = px.bar(
-        ret_df,
-        x="Question",
-        y="Hit Rate",
-        color="Category",
-        height=350,
-        labels={"Hit Rate": "Keyword Hit Rate (%)"}
-    )
+    fig_ret = px.bar(ret_df, x="Question", y="Hit Rate", color="Category", height=350,
+                     labels={"Hit Rate": "Keyword Hit Rate (%)"})
     fig_ret.update_layout(margin=dict(t=20, b=80), yaxis_range=[0, 100])
     st.plotly_chart(fig_ret, use_container_width=True)
 
@@ -143,7 +198,6 @@ if run_btn:
 
     # ── LLM judge scores ───────────────────────────────────
     st.subheader("🤖 LLM-as-Judge Scores")
-
     score_df = pd.DataFrame([
         {
             "Question":     f"Q{r['id'][1:]}",
@@ -154,25 +208,20 @@ if run_btn:
         }
         for r in results
     ])
-
     fig_scores = go.Figure()
     fig_scores.add_trace(go.Scatter(name="Faithfulness", x=score_df["Question"], y=score_df["Faithfulness"], mode="lines+markers", marker_color="#5856d6"))
     fig_scores.add_trace(go.Scatter(name="Relevance",    x=score_df["Question"], y=score_df["Relevance"],    mode="lines+markers", marker_color="#34c759"))
     fig_scores.add_trace(go.Scatter(name="Completeness", x=score_df["Question"], y=score_df["Completeness"], mode="lines+markers", marker_color="#ff9500"))
     fig_scores.add_trace(go.Scatter(name="Overall",      x=score_df["Question"], y=score_df["Overall"],      mode="lines+markers", marker_color="#ff3b30", line=dict(dash="dash", width=2)))
-    fig_scores.update_layout(
-        height=350,
-        margin=dict(t=20, b=20),
-        yaxis=dict(range=[0, 10], title="Score (out of 10)"),
-        legend=dict(orientation="h", y=1.1)
-    )
+    fig_scores.update_layout(height=350, margin=dict(t=20, b=20),
+                              yaxis=dict(range=[0, 10], title="Score (out of 10)"),
+                              legend=dict(orientation="h", y=1.1))
     st.plotly_chart(fig_scores, use_container_width=True)
 
     st.divider()
 
-    # ── Detailed results table ─────────────────────────────
+    # ── Detailed results ───────────────────────────────────
     st.subheader("📋 Detailed Results")
-
     for r in results:
         with st.expander(f"Q{r['id'][1:]}: {r['question']}"):
             col1, col2 = st.columns(2)
@@ -197,7 +246,6 @@ if run_btn:
             st.code(r["retrieval"]["context_preview"], language=None)
 
 else:
-    # ── Empty state ────────────────────────────────────────
     st.markdown("""
     <div style="text-align:center;padding:4rem 0;opacity:0.4;">
         <p style="font-size:48px;">📊</p>

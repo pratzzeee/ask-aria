@@ -141,14 +141,10 @@ Respond ONLY in this exact JSON format with no extra text:
 # ── Full Evaluation Runner ─────────────────────────────────
 
 def run_full_evaluation(dataset_path: str = "eval_data/test_qa.json") -> list[dict]:
-    """
-    Run all 3 evaluation methods on every question in the golden dataset.
-    Returns list of result dicts — one per question.
-    """
     dataset = load_golden_dataset(dataset_path)
     results = []
 
-    for item in dataset["questions"]:
+    for i, item in enumerate(dataset["questions"]):
         question        = item["question"]
         expected_answer = item["expected_answer"]
 
@@ -165,7 +161,7 @@ def run_full_evaluation(dataset_path: str = "eval_data/test_qa.json") -> list[di
         result["latency"]       = latency
         result["actual_answer"] = latency["answer"]
 
-        # Method 2: Retrieval quality
+        # Method 2: Retrieval
         retrieval = evaluate_retrieval(question, expected_answer)
         result["retrieval"] = retrieval
 
@@ -174,5 +170,9 @@ def run_full_evaluation(dataset_path: str = "eval_data/test_qa.json") -> list[di
         result["llm_judge"] = scores
 
         results.append(result)
+
+        # ← Rate limit protection: wait between questions
+        if i < len(dataset["questions"]) - 1:
+            time.sleep(15)
 
     return results
