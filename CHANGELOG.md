@@ -4,6 +4,47 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 
 ---
 
+## [v7.0.0] - 2026-05-26 — Feature 6: MLOps Evaluation Pipeline
+
+### Added
+- `mlops/experiment_tracker.py` — core MLOps engine:
+  - `save_baseline()` — saves current eval as ground truth
+  - `save_experiment()` — logs named experiments with config
+  - `load_baseline()` / `load_experiments()` — retrieval functions
+  - `compute_summary()` — aggregates metrics across all questions
+  - `compare_to_baseline()` — computes deltas per metric
+  - `get_best_experiment()` — finds highest scoring config
+- `mlops/baseline.json` — saved baseline metrics
+- `mlops/experiments.json` — all experiment results logged
+- Updated `eval_dashboard.py`:
+  - Session state for results (survives button clicks)
+  - **Save as Baseline** button
+  - **Save as Experiment** button with name + description
+  - **vs Baseline** comparison row with green/red deltas
+  - Baseline status shown in sidebar with key metrics
+
+### Experiments Run
+
+| Experiment | CHUNK_SIZE | TOP_K | Retrieval | Overall |
+|---|---|---|---|---|
+| Baseline | 500 | 6 | 55.8% | 8.4/10 |
+| chunk_size_800 | 800 | 6 | 66.7% | 7.4/10 |
+| chunk_size_650 | 650 | 6 | 56.7% | 8.4/10 |
+| top_k_10 | 500 | 10 | 67.6% | 7.1/10 |
+
+### Key Finding
+- Baseline config (CHUNK_SIZE=500, TOP_K=6) is optimal for `llama-3.1-8b-instant`
+- Consistent trade-off: more context = +12% retrieval but -1.3 overall LLM quality
+- Root cause: 8B model capacity — larger context confuses smaller models
+- Next step: semantic chunking or upgrading to 70B model
+
+### Config Reverted to Optimal
+- `CHUNK_SIZE = 500`
+- `CHUNK_OVERLAP = 50`
+- `TOP_K = 6`
+
+---
+
 ## [v6.0.0] - 2026-05-21 — Feature 5: RAG Evaluation Dashboard
 
 ### Added
@@ -143,5 +184,6 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 | v4.0.0 | Multi-document chat (PDF/DOCX/TXT) | ✅ Complete |
 | v5.0.0 | UI upgrade + code refactor | ✅ Complete |
 | v6.0.0 | RAG evaluation dashboard | ✅ Complete |
-| v7.0.0 | Performance & caching improvements | 🔲 Planned |
-| v7.1.0 | Add more LLM models | 🔲 Planned |
+| v7.0.0 | MLOps evaluation pipeline | ✅ Complete |
+| v8.0.0 | Semantic chunking strategy | 🔲 Planned |
+| v8.1.0 | Usage analytics tracker | 🔲 Planned |
