@@ -1,6 +1,6 @@
 # 🤖 ask-aria — Conversational AI Chatbot
 
-A production-grade AI chatbot with multi-document RAG, streaming responses, MLOps evaluation pipeline, and support for PDF, DOCX, and TXT files. Built with LLaMA 3 via Groq and deployed on Streamlit Cloud.
+A production-grade AI chatbot with multi-document RAG, hybrid search, streaming responses, MLOps evaluation pipeline, and support for PDF, DOCX, and TXT files. Built with LLaMA 3 via Groq and deployed on Streamlit Cloud.
 
 🔗 **Live Demo:** [Click here](https://portfoliochatbot-7qfqqmjdqdxepxv3c9zdpe.streamlit.app/)
 
@@ -10,7 +10,7 @@ A production-grade AI chatbot with multi-document RAG, streaming responses, MLOp
 
 ask-aria is an AI-powered customer support assistant that can hold multi-turn conversations, remember context within a session, and respond in a friendly, helpful tone.
 
-This project was built as part of a portfolio to demonstrate end-to-end ML application development — from local development to cloud deployment — including RAG pipelines, vector databases, production-safe dependency management, a full evaluation framework, and an MLOps pipeline to systematically measure and improve system performance.
+This project was built as part of a portfolio to demonstrate end-to-end ML application development — from local development to cloud deployment — including RAG pipelines, hybrid vector search, production-safe dependency management, a full evaluation framework, and an MLOps pipeline to systematically measure and improve system performance.
 
 ---
 
@@ -23,7 +23,8 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 | Hosting | Streamlit Cloud (free tier) |
 | Language | Python 3.9 |
 | Embeddings | HuggingFace Inference API (all-MiniLM-L6-v2) |
-| Vector DB | Pinecone (serverless) |
+| Vector DB | Pinecone (serverless, dotproduct metric) |
+| Hybrid Search | BM25 sparse vectors via pinecone-text |
 | PDF Parsing | pypdf |
 | DOCX Parsing | python-docx |
 | TXT Parsing | Python built-in |
@@ -40,9 +41,10 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 - Streaming responses (token-by-token like ChatGPT)
 - Clear conversation button
 
-### 📁 Document Chat (RAG)
+### 📁 Document Chat (RAG + Hybrid Search)
 - Upload multiple files simultaneously (PDF, DOCX, TXT)
-- Semantic search via Pinecone vector database
+- **Hybrid search** — combines dense vector embeddings + BM25 sparse vectors
+- Retrieves exact numbers, names and technical terms (BM25) AND semantic meaning (dense)
 - Free embeddings via HuggingFace Inference API — no OpenAI key needed
 - Answers grounded strictly in document context
 - Source attribution — Aria tells you which document the answer came from
@@ -62,21 +64,31 @@ This project was built as part of a portfolio to demonstrate end-to-end ML appli
 - Log named experiments with config and description
 - Side-by-side vs Baseline comparison with green/red deltas
 - Experiment tracker stores all runs in JSON for full history
-- 4 experiments run — finding: baseline config optimal for 8B model
 - Run via: `streamlit run eval_dashboard.py`
 
 ---
 
-## 🔬 MLOps Findings
+## 📈 Performance Results
+
+### Hybrid Search vs Baseline
+
+| Metric | Baseline (dense only) | Hybrid (BM25 + dense) | Delta |
+|---|---|---|---|
+| Retrieval Hit % | 55.8% | 70.0% | +14.2% ✅ |
+| Faithfulness | 8.1/10 | 8.6/10 | +0.5 ✅ |
+| Completeness | 7.5/10 | 8.0/10 | +0.5 ✅ |
+| Overall Score | 8.4/10 | 8.6/10 | +0.2 ✅ |
+| Latency | 1.39s | 1.64s | +0.25s ➡️ |
+
+### MLOps Experiments
 
 | Experiment | CHUNK_SIZE | TOP_K | Retrieval | Overall | Verdict |
 |---|---|---|---|---|---|
-| Baseline | 500 | 6 | 55.8% | 8.4/10 | ✅ Optimal |
+| Baseline | 500 | 6 | 55.8% | 8.4/10 | ✅ Optimal for 8B |
 | chunk_size_800 | 800 | 6 | 66.7% | 7.4/10 | ❌ LLM confused |
 | chunk_size_650 | 650 | 6 | 56.7% | 8.4/10 | ➡️ No gain |
 | top_k_10 | 500 | 10 | 67.6% | 7.1/10 | ❌ Too much context |
-
-**Key insight:** More context improves retrieval (+12%) but hurts 8B LLM quality (-1.3 pts). Baseline config is optimal for `llama-3.1-8b-instant`.
+| hybrid_search | 500 | 6 | 70.0% | 8.6/10 | ✅ Best overall |
 
 ---
 
@@ -137,7 +149,7 @@ HF_API_TOKEN=your_huggingface_token
 ```
 ask-aria/
 ├── app.py                  # Streamlit UI — chat interface
-├── rag.py                  # RAG engine (extract, chunk, embed, query, clear)
+├── rag.py                  # RAG engine (extract, chunk, embed, hybrid query, clear)
 ├── config.py               # Models, prompts, constants, author info
 ├── styles.py               # All CSS and HTML string templates
 ├── utils.py                # Helper functions (file handling, message building)
@@ -149,7 +161,8 @@ ask-aria/
 │   ├── __init__.py
 │   ├── experiment_tracker.py  # Save/load/compare experiments
 │   ├── baseline.json          # Saved baseline metrics
-│   └── experiments.json       # All experiment results
+│   ├── experiments.json       # All experiment results
+│   └── bm25_encoder.json      # Fitted BM25 model per document set
 ├── .streamlit/
 │   └── config.toml         # Streamlit theme configuration
 ├── requirements.txt        # Minimal clean dependencies
@@ -173,8 +186,9 @@ ask-aria/
 | v5.0.0 | UI upgrade + code refactor | ✅ Complete |
 | v6.0.0 | RAG evaluation dashboard | ✅ Complete |
 | v7.0.0 | MLOps evaluation pipeline | ✅ Complete |
-| v8.0.0 | Semantic chunking strategy | 🔲 Planned |
-| v8.1.0 | Usage analytics tracker | 🔲 Planned |
+| v8.0.0 | Hybrid search (BM25 + dense vectors) | ✅ Complete |
+| v9.0.0 | Usage analytics tracker | 🔲 Planned |
+| v9.1.0 | Semantic chunking strategy | 🔲 Planned |
 
 ---
 
@@ -190,6 +204,8 @@ ask-aria/
 | Modular file structure | config/styles/utils split for scalability and maintainability |
 | Evaluation framework | Data-driven improvements — measure before optimising |
 | MLOps pipeline | Systematic experimentation with baseline comparison |
+| Hybrid search over pure vector | BM25 fixes exact term retrieval — improved hit rate from 55.8% to 70% |
+| dotproduct metric in Pinecone | Required for hybrid dense+sparse vector search |
 
 ---
 
