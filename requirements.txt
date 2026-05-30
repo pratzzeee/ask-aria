@@ -6,3 +6,4 @@ pinecone
 requests
 python-docx
 plotly
+pinecone-text
