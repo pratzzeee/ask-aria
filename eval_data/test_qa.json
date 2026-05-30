@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "created": "2026-05-21",
+    "created": "2026-05-29",
     "description": "Golden Q&A pairs for Aria RAG evaluation",
-    "document": "Prathyush_Maniyam_Resume.pdf"
+    "document": "Prathyush_Maniyam_Resume_AIE_MK.pdf"
   },
   "questions": [
     {
@@ -14,52 +14,52 @@
     },
     {
       "id": "q2",
-      "question": "What was his role at Castus Info Solutions?",
-      "expected_answer": "Senior Data Scientist",
+      "question": "Where does he currently work?",
+      "expected_answer": "Community Dreams Foundation",
       "category": "factual",
       "difficulty": "easy"
     },
     {
       "id": "q3",
       "question": "What university did he attend for his Masters?",
-      "expected_answer": "University of Texas at Dallas",
+      "expected_answer": "The University of Texas at Dallas",
       "category": "factual",
       "difficulty": "easy"
     },
     {
       "id": "q4",
-      "question": "What percentage did he reduce training cost by?",
-      "expected_answer": "68%",
+      "question": "By what percentage did he accelerate use-case delivery at Community Dreams Foundation?",
+      "expected_answer": "52%",
       "category": "numerical",
       "difficulty": "medium"
     },
     {
       "id": "q5",
       "question": "What LLM fine-tuning techniques did he use?",
-      "expected_answer": "LoRA and PEFT with Hugging Face Transformers and PyTorch",
+      "expected_answer": "LoRA, PEFT and QLoRA with Hugging Face and PyTorch",
       "category": "technical",
       "difficulty": "medium"
     },
     {
       "id": "q6",
-      "question": "How many years of industry experience does he have?",
-      "expected_answer": "4+ years",
+      "question": "What was his role at Tech Mahindra?",
+      "expected_answer": "Junior Data Scientist",
       "category": "factual",
       "difficulty": "easy"
     },
     {
       "id": "q7",
-      "question": "What improvement did he achieve in summary accuracy?",
-      "expected_answer": "19% improvement over the base model",
+      "question": "By what percentage did he improve first-contact resolution at Castus Info Solutions?",
+      "expected_answer": "16%",
       "category": "numerical",
       "difficulty": "medium"
     },
     {
       "id": "q8",
-      "question": "What degree is he pursuing?",
-      "expected_answer": "Master of Science in Business Analytics and Artificial Intelligence",
-      "category": "factual",
-      "difficulty": "easy"
+      "question": "What accuracy gain did he achieve in the LLM fine-tuning pipeline project?",
+      "expected_answer": "25% accuracy gain",
+      "category": "numerical",
+      "difficulty": "medium"
     },
     {
       "id": "q9",
@@ -70,8 +70,8 @@
     },
     {
       "id": "q10",
-      "question": "Summarise his overall profile as a data scientist",
-      "expected_answer": "Senior Data Scientist with 4+ years experience, specialising in LLMs, RAG, fine-tuning, and ML pipelines",
+      "question": "Summarise his overall profile as an AI engineer",
+      "expected_answer": "AI Engineer with 4+ years experience in RAG architectures, agentic workflows, LLM evaluation, Azure and GCP cloud platforms",
       "category": "summarisation",
       "difficulty": "hard"
     }
