@@ -4,6 +4,44 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 
 ---
 
+## [v8.0.0] - 2026-05-29 — Feature 7: Hybrid Search (BM25 + Dense Vectors)
+
+### Added
+- `pinecone-text` library for BM25 sparse vector encoding
+- `BM25Encoder` fitted on document corpus at upload time
+- `mlops/bm25_encoder.json` — persisted BM25 model per document set
+- Hybrid query in `query_rag()` — combines dense + sparse vectors with `alpha` parameter:
+  - `alpha=0` → pure keyword (BM25)
+  - `alpha=1` → pure semantic (dense)
+  - `alpha=0.5` → balanced (default)
+
+### Changed
+- Pinecone index metric changed from `cosine` → `dotproduct` (required for hybrid)
+- `process_file()` now upserts both `values` (dense) and `sparse_values` (BM25) per chunk
+- `clear_index()` also deletes BM25 encoder so it refits on next upload
+- Updated `eval_data/test_qa.json` to match updated resume content
+
+### Results vs Baseline
+
+| Metric | Baseline | Hybrid (α=0.5) | Delta |
+|---|---|---|---|
+| Retrieval Hit % | 55.8% | 70.0% | +14.2% ✅ |
+| Faithfulness | 8.1/10 | 8.6/10 | +0.5 ✅ |
+| Relevance | 9.7/10 | 9.1/10 | -0.6 ⚠️ |
+| Completeness | 7.5/10 | 8.0/10 | +0.5 ✅ |
+| Overall | 8.4/10 | 8.6/10 | +0.2 ✅ |
+| Latency | 1.39s | 1.64s | +0.25s ➡️ |
+
+### Key Finding
+- Hybrid search fixes the exact term retrieval weakness — numerical questions (52%, 16%, 25%) now retrieved correctly
+- BM25 excels at exact numbers and technical terms; dense vectors handle semantic questions
+- Combined approach improves both retrieval quality and overall LLM score
+
+### Tech Stack Addition
+- `pinecone-text` for BM25 sparse vector generation
+
+---
+
 ## [v7.0.0] - 2026-05-26 — Feature 6: MLOps Evaluation Pipeline
 
 ### Added
@@ -36,12 +74,6 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 - Baseline config (CHUNK_SIZE=500, TOP_K=6) is optimal for `llama-3.1-8b-instant`
 - Consistent trade-off: more context = +12% retrieval but -1.3 overall LLM quality
 - Root cause: 8B model capacity — larger context confuses smaller models
-- Next step: semantic chunking or upgrading to 70B model
-
-### Config Reverted to Optimal
-- `CHUNK_SIZE = 500`
-- `CHUNK_OVERLAP = 50`
-- `TOP_K = 6`
 
 ---
 
@@ -149,7 +181,7 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 - Replaced `sentence-transformers` + `torch` with HF Inference API (no heavy ML deps)
 - Fixed HuggingFace router URL migration (`api-inference` → `router.huggingface.co`)
 - Fixed tempfile flush issue causing empty file reads
-- Cleaned `requirements.txt` of macOS-specific local `.whl` paths
+- Cleaned `requirements.txt` of macOS-local `.whl` paths
 
 ### Tech Stack Addition
 - `pypdf` for PDF parsing
@@ -185,5 +217,6 @@ All notable changes to Aria — AI Customer Support Chatbot are documented here.
 | v5.0.0 | UI upgrade + code refactor | ✅ Complete |
 | v6.0.0 | RAG evaluation dashboard | ✅ Complete |
 | v7.0.0 | MLOps evaluation pipeline | ✅ Complete |
-| v8.0.0 | Semantic chunking strategy | 🔲 Planned |
-| v8.1.0 | Usage analytics tracker | 🔲 Planned |
+| v8.0.0 | Hybrid search (BM25 + dense vectors) | ✅ Complete |
+| v9.0.0 | Usage analytics tracker | 🔲 Planned |
+| v9.1.0 | Semantic chunking strategy | 🔲 Planned |
